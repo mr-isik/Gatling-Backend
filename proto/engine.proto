@@ -1,0 +1,26 @@
+syntax = "proto3";
+
+package engine;
+
+option go_package = "github.com/mr-isik/gatling-backend/proto/engine";
+
+service EngineService {
+  rpc StartTest(StartTestRequest) returns (StartTestResponse);
+  rpc StopTest(StopTestRequest) returns (StopTestResponse);
+}
+
+message StartTestRequest {
+  string run_id = 1;
+}
+
+message StartTestResponse {
+  bool success = 1;
+}
+
+message StopTestRequest {
+  string run_id = 1;
+}
+
+message StopTestResponse {
+  bool success = 1;
+}

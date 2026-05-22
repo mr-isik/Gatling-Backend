@@ -1,0 +1,21 @@
+server:
+  port: 8080
+db:
+  host: ${DB_HOST:localhost}
+  port: ${DB_PORT:5432}
+  user: ${DB_USER:postgres}
+  password: ${DB_PASSWORD:secret}
+  name: ${DB_NAME:gatling_db}
+redis:
+  url: ${REDIS_URL:redis://localhost:6379/0}
+influx:
+  url: ${INFLUX_URL:http://localhost:8086}
+  token: ${INFLUX_TOKEN:}
+  org: ${INFLUX_ORG:gatling}
+  bucket: ${INFLUX_BUCKET:metrics}
+llm:
+  api_key: ${LLM_API_KEY:}
+jwt:
+  secret: ${JWT_SECRET:change-me-in-production}
+  access_expiry_min: 15
+  refresh_expiry_day: 7

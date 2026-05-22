@@ -1,0 +1,12 @@
+syntax = "proto3";
+
+package metric;
+
+option go_package = "github.com/mr-isik/gatling-backend/proto/metric";
+
+message MetricEvent {
+  string run_id = 1;
+  int64 timestamp = 2;
+  int64 latency = 3;
+  int32 status_code = 4;
+}

@@ -1,0 +1,1158 @@
+definitions:
+  github_com_mr-isik_gatling-backend_internal_domain.AggregatedMetric:
+    properties:
+      active_vus:
+        type: integer
+      avg_latency:
+        type: number
+      error_rate:
+        description: '%'
+        type: number
+      p50:
+        type: number
+      p95:
+        type: number
+      p99:
+        type: number
+      run_id:
+        type: string
+      throughput:
+        description: req/s
+        type: number
+      timestamp:
+        type: string
+    type: object
+  github_com_mr-isik_gatling-backend_internal_domain.Anomaly:
+    properties:
+      message:
+        type: string
+      severity:
+        description: low, medium, high
+        type: string
+      timestamp:
+        type: string
+      type:
+        description: latency_spike, error_surge, throughput_drop
+        type: string
+    type: object
+  github_com_mr-isik_gatling-backend_internal_domain.Check:
+    properties:
+      operator:
+        description: eq, gt, contains
+        type: string
+      type:
+        description: status, body_contains, json_path
+        type: string
+      value:
+        type: string
+    type: object
+  github_com_mr-isik_gatling-backend_internal_domain.Project:
+    properties:
+      created_at:
+        type: string
+      description:
+        type: string
+      id:
+        type: string
+      name:
+        type: string
+      owner_id:
+        type: string
+    type: object
+  github_com_mr-isik_gatling-backend_internal_domain.Report:
+    properties:
+      ai_recommendations:
+        items:
+          type: string
+        type: array
+      ai_summary:
+        type: string
+      anomalies:
+        items:
+          $ref: '#/definitions/github_com_mr-isik_gatling-backend_internal_domain.Anomaly'
+        type: array
+      created_at:
+        type: string
+      id:
+        type: string
+      run_id:
+        type: string
+      summary:
+        $ref: '#/definitions/github_com_mr-isik_gatling-backend_internal_domain.Summary'
+    type: object
+  github_com_mr-isik_gatling-backend_internal_domain.RunConfig:
+    properties:
+      baseline_run_id:
+        type: string
+      duration:
+        $ref: '#/definitions/time.Duration'
+      ramp_down_duration:
+        $ref: '#/definitions/time.Duration'
+      ramp_up_duration:
+        $ref: '#/definitions/time.Duration'
+      vus:
+        type: integer
+    type: object
+  github_com_mr-isik_gatling-backend_internal_domain.RunStatus:
+    enum:
+    - pending
+    - running
+    - stopping
+    - finished
+    - failed
+    - stopped
+    type: string
+    x-enum-varnames:
+    - StatusPending
+    - StatusRunning
+    - StatusStopping
+    - StatusFinished
+    - StatusFailed
+    - StatusStopped
+  github_com_mr-isik_gatling-backend_internal_domain.Scenario:
+    properties:
+      created_at:
+        type: string
+      created_by:
+        type: string
+      description:
+        type: string
+      id:
+        type: string
+      is_ai_generated:
+        type: boolean
+      name:
+        type: string
+      project_id:
+        type: string
+      steps:
+        items:
+          $ref: '#/definitions/github_com_mr-isik_gatling-backend_internal_domain.Step'
+        type: array
+      tags:
+        items:
+          type: string
+        type: array
+      updated_at:
+        type: string
+    type: object
+  github_com_mr-isik_gatling-backend_internal_domain.Step:
+    properties:
+      body:
+        type: string
+      checks:
+        items:
+          $ref: '#/definitions/github_com_mr-isik_gatling-backend_internal_domain.Check'
+        type: array
+      headers:
+        additionalProperties:
+          type: string
+        type: object
+      method:
+        type: string
+      name:
+        type: string
+      order:
+        type: integer
+      think_time_ms:
+        type: integer
+      url:
+        type: string
+    type: object
+  github_com_mr-isik_gatling-backend_internal_domain.Summary:
+    properties:
+      avg_latency:
+        type: number
+      duration_ms:
+        type: integer
+      error_count:
+        type: integer
+      max_vus:
+        type: integer
+      p95_latency:
+        type: number
+      p99_latency:
+        type: number
+      success_count:
+        type: integer
+      total_requests:
+        type: integer
+    type: object
+  github_com_mr-isik_gatling-backend_internal_domain.TestRun:
+    properties:
+      config:
+        $ref: '#/definitions/github_com_mr-isik_gatling-backend_internal_domain.RunConfig'
+      created_at:
+        type: string
+      error_msg:
+        type: string
+      finished_at:
+        type: string
+      id:
+        type: string
+      project_id:
+        type: string
+      scenario_id:
+        type: string
+      started_at:
+        type: string
+      started_by:
+        type: string
+      status:
+        $ref: '#/definitions/github_com_mr-isik_gatling-backend_internal_domain.RunStatus'
+    type: object
+  internal_api_handler.addMemberRequest:
+    properties:
+      role:
+        type: string
+      user_id:
+        type: string
+    type: object
+  internal_api_handler.cloneRequest:
+    properties:
+      name:
+        type: string
+    type: object
+  internal_api_handler.createAPIKeyRequest:
+    properties:
+      name:
+        type: string
+    type: object
+  internal_api_handler.exportRequest:
+    properties:
+      format:
+        type: string
+    type: object
+  internal_api_handler.generateRequest:
+    properties:
+      prompt:
+        type: string
+    type: object
+  internal_api_handler.loginRequest:
+    properties:
+      email:
+        type: string
+      password:
+        type: string
+    type: object
+  internal_api_handler.refreshRequest:
+    properties:
+      refresh_token:
+        type: string
+    type: object
+  internal_api_handler.registerRequest:
+    properties:
+      email:
+        type: string
+      password:
+        type: string
+    type: object
+  internal_api_handler.startRunRequest:
+    properties:
+      config:
+        $ref: '#/definitions/github_com_mr-isik_gatling-backend_internal_domain.RunConfig'
+      project_id:
+        type: string
+      scenario_id:
+        type: string
+    type: object
+  time.Duration:
+    enum:
+    - -9223372036854775808
+    - 9223372036854775807
+    - 1
+    - 1000
+    - 1000000
+    - 1000000000
+    - 60000000000
+    - 3600000000000
+    format: int64
+    type: integer
+    x-enum-varnames:
+    - minDuration
+    - maxDuration
+    - Nanosecond
+    - Microsecond
+    - Millisecond
+    - Second
+    - Minute
+    - Hour
+info:
+  contact:
+    email: support@swagger.io
+    name: API Support
+    url: http://www.swagger.io/support
+  description: AI-Powered Load Testing Tool Backend API.
+  termsOfService: http://swagger.io/terms/
+  title: Gatling-Backend API
+  version: "1.0"
+paths:
+  /auth/api-keys:
+    post:
+      consumes:
+      - application/json
+      description: Generates a new API Key for the user (shown only once).
+      parameters:
+      - description: API Key Name
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/internal_api_handler.createAPIKeyRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Create API Key
+      tags:
+      - Auth
+  /auth/api-keys/{id}:
+    delete:
+      description: Deletes an existing API Key.
+      parameters:
+      - description: API Key ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Delete API Key
+      tags:
+      - Auth
+  /auth/login:
+    post:
+      consumes:
+      - application/json
+      description: Logs in a user with email and password, returns a JWT token pair.
+      parameters:
+      - description: Login Credentials
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/internal_api_handler.loginRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Login
+      tags:
+      - Auth
+  /auth/refresh:
+    post:
+      consumes:
+      - application/json
+      description: Generates a new access token using a refresh token.
+      parameters:
+      - description: Refresh Token
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/internal_api_handler.refreshRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Refresh Token
+      tags:
+      - Auth
+  /auth/register:
+    post:
+      consumes:
+      - application/json
+      description: Creates a new user and returns a JWT token pair.
+      parameters:
+      - description: User Registration Info
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/internal_api_handler.registerRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Register User
+      tags:
+      - Auth
+  /v1/projects:
+    get:
+      description: Lists all projects owned by the authenticated user.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/github_com_mr-isik_gatling-backend_internal_domain.Project'
+            type: array
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: List Projects
+      tags:
+      - Project
+    post:
+      consumes:
+      - application/json
+      description: Creates a new project.
+      parameters:
+      - description: Project Data
+        in: body
+        name: project
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_mr-isik_gatling-backend_internal_domain.Project'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/github_com_mr-isik_gatling-backend_internal_domain.Project'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Create Project
+      tags:
+      - Project
+  /v1/projects/{id}/members:
+    post:
+      consumes:
+      - application/json
+      description: Adds a new member to a project.
+      parameters:
+      - description: Project ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Member Info
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/internal_api_handler.addMemberRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Add Project Member
+      tags:
+      - Project
+  /v1/projects/{id}/usage:
+    get:
+      description: Gets the usage statistics (runs, VUs) for a project.
+      parameters:
+      - description: Project ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get Project Usage
+      tags:
+      - Project
+  /v1/reports/{id}:
+    get:
+      description: Gets a specific test report by ID.
+      parameters:
+      - description: Report ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_mr-isik_gatling-backend_internal_domain.Report'
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get Report
+      tags:
+      - Report
+  /v1/reports/{id}/ai-summary:
+    get:
+      description: Gets an AI generated summary for a specific test report.
+      parameters:
+      - description: Report ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_mr-isik_gatling-backend_internal_domain.Report'
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get AI Summary
+      tags:
+      - Report
+  /v1/reports/{id}/export:
+    post:
+      consumes:
+      - application/json
+      description: Exports a report in the specified format (e.g. PDF, CSV).
+      parameters:
+      - description: Report ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Export Format
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/internal_api_handler.exportRequest'
+      produces:
+      - application/octet-stream
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: file
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Export Report
+      tags:
+      - Report
+  /v1/reports/compare:
+    get:
+      description: Compares two test runs (baseline vs current).
+      parameters:
+      - description: Baseline Run ID
+        in: query
+        name: run1
+        required: true
+        type: string
+      - description: Current Run ID
+        in: query
+        name: run2
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Compare Reports
+      tags:
+      - Report
+  /v1/runs:
+    get:
+      description: Lists all test runs for a given project.
+      parameters:
+      - description: Project ID
+        in: query
+        name: project_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/github_com_mr-isik_gatling-backend_internal_domain.TestRun'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: List Test Runs
+      tags:
+      - TestRun
+    post:
+      consumes:
+      - application/json
+      description: Starts a new load test execution.
+      parameters:
+      - description: Start Run Details
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/internal_api_handler.startRunRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Start Test Run
+      tags:
+      - TestRun
+  /v1/runs/{id}:
+    get:
+      description: Gets detailed information for a specific test run by ID.
+      parameters:
+      - description: Test Run ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_mr-isik_gatling-backend_internal_domain.TestRun'
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get Test Run
+      tags:
+      - TestRun
+  /v1/runs/{id}/metrics:
+    get:
+      description: Gets the time-series metrics for a test run.
+      parameters:
+      - description: Test Run ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Start Time (RFC3339)
+        in: query
+        name: from
+        type: string
+      - description: End Time (RFC3339)
+        in: query
+        name: to
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/github_com_mr-isik_gatling-backend_internal_domain.AggregatedMetric'
+            type: array
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get Run Metrics
+      tags:
+      - TestRun
+  /v1/runs/{id}/stop:
+    post:
+      description: Stops a currently running test run.
+      parameters:
+      - description: Test Run ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Stop Test Run
+      tags:
+      - TestRun
+  /v1/scenarios:
+    get:
+      description: Lists all test scenarios for a given project.
+      parameters:
+      - description: Project ID
+        in: query
+        name: project_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/github_com_mr-isik_gatling-backend_internal_domain.Scenario'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: List Scenarios
+      tags:
+      - Scenario
+    post:
+      consumes:
+      - application/json
+      description: Creates a new test scenario.
+      parameters:
+      - description: Scenario Data
+        in: body
+        name: scenario
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_mr-isik_gatling-backend_internal_domain.Scenario'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/github_com_mr-isik_gatling-backend_internal_domain.Scenario'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Create Scenario
+      tags:
+      - Scenario
+  /v1/scenarios/{id}:
+    delete:
+      description: Deletes a scenario from the system by ID.
+      parameters:
+      - description: Scenario ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Delete Scenario
+      tags:
+      - Scenario
+    get:
+      description: Gets detailed information for a specific scenario by ID.
+      parameters:
+      - description: Scenario ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_mr-isik_gatling-backend_internal_domain.Scenario'
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get Scenario
+      tags:
+      - Scenario
+    put:
+      consumes:
+      - application/json
+      description: Updates the data of an existing scenario by ID.
+      parameters:
+      - description: Scenario ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Updated Scenario Data
+        in: body
+        name: scenario
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_mr-isik_gatling-backend_internal_domain.Scenario'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_mr-isik_gatling-backend_internal_domain.Scenario'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Update Scenario
+      tags:
+      - Scenario
+  /v1/scenarios/{id}/clone:
+    post:
+      consumes:
+      - application/json
+      description: Clones an existing scenario with a new name.
+      parameters:
+      - description: Scenario ID to clone
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: New Scenario Name
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/internal_api_handler.cloneRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/github_com_mr-isik_gatling-backend_internal_domain.Scenario'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Clone Scenario
+      tags:
+      - Scenario
+  /v1/scenarios/generate:
+    post:
+      consumes:
+      - application/json
+      description: Generates a test scenario using AI based on a prompt.
+      parameters:
+      - description: AI Prompt
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/internal_api_handler.generateRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_mr-isik_gatling-backend_internal_domain.Scenario'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Generate Scenario via AI
+      tags:
+      - Scenario
+securityDefinitions:
+  BearerAuth:
+    description: Type "Bearer" followed by a space and JWT token.
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"
