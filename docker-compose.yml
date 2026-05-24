@@ -1,11 +1,9 @@
-version: '3.8'
-
 services:
   postgres:
     image: postgres:15-alpine
     environment:
       POSTGRES_USER: ${DB_USER:-gatling}
-      POSTGRES_PASSWORD: ${DB_PASS:-gatling_secret}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-gatling_secret}
       POSTGRES_DB: ${DB_NAME:-gatling_db}
     ports:
       - "5432:5432"
@@ -54,10 +52,9 @@ services:
       - DB_HOST=postgres
       - DB_PORT=5432
       - DB_USER=${DB_USER:-gatling}
-      - DB_PASS=${DB_PASS:-gatling_secret}
+      - DB_PASSWORD=${DB_PASSWORD:-gatling_secret}
       - DB_NAME=${DB_NAME:-gatling_db}
-      - REDIS_HOST=redis
-      - REDIS_PORT=6379
+      - REDIS_URL=${REDIS_URL:-redis://redis:6379/0}
       - INFLUX_URL=http://influxdb:8086
       - INFLUX_TOKEN=${INFLUX_TOKEN:-my-super-secret-auth-token}
       - INFLUX_ORG=${INFLUX_ORG:-gatling-org}

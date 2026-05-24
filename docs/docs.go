@@ -147,8 +147,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "$ref": "#/definitions/github_com_mr-isik_gatling-backend_internal_service.TokenPair"
                         }
                     },
                     "400": {
@@ -196,8 +195,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "$ref": "#/definitions/github_com_mr-isik_gatling-backend_internal_service.TokenPair"
                         }
                     },
                     "400": {
@@ -245,8 +243,7 @@ const docTemplate = `{
                     "201": {
                         "description": "Created",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "$ref": "#/definitions/github_com_mr-isik_gatling-backend_internal_service.TokenPair"
                         }
                     },
                     "400": {
@@ -1638,6 +1635,17 @@ const docTemplate = `{
                 },
                 "status": {
                     "$ref": "#/definitions/github_com_mr-isik_gatling-backend_internal_domain.RunStatus"
+                }
+            }
+        },
+        "github_com_mr-isik_gatling-backend_internal_service.TokenPair": {
+            "type": "object",
+            "properties": {
+                "access_token": {
+                    "type": "string"
+                },
+                "refresh_token": {
+                    "type": "string"
                 }
             }
         },

@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"encoding/json"
 	"net/http"
 
 	"github.com/mr-isik/gatling-backend/internal/api/httputil"
@@ -28,7 +29,7 @@ type registerRequest struct {
 // @Accept       json
 // @Produce      json
 // @Param        request body registerRequest true "User Registration Info"
-// @Success      201  {object}  map[string]interface{}
+// @Success      201  {object}  service.TokenPair
 // @Failure      400  {object}  map[string]interface{}
 // @Router       /auth/register [post]
 func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
@@ -44,7 +45,9 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	httputil.JSON(w, http.StatusCreated, tokenPair)
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusCreated)
+	json.NewEncoder(w).Encode(tokenPair)
 }
 
 type loginRequest struct {
@@ -59,7 +62,7 @@ type loginRequest struct {
 // @Accept       json
 // @Produce      json
 // @Param        request body loginRequest true "Login Credentials"
-// @Success      200  {object}  map[string]interface{}
+// @Success      200  {object}  service.TokenPair
 // @Failure      400  {object}  map[string]interface{}
 // @Failure      401  {object}  map[string]interface{}
 // @Router       /auth/login [post]
@@ -76,7 +79,9 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	httputil.JSON(w, http.StatusOK, tokenPair)
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(tokenPair)
 }
 
 type refreshRequest struct {
@@ -90,7 +95,7 @@ type refreshRequest struct {
 // @Accept       json
 // @Produce      json
 // @Param        request body refreshRequest true "Refresh Token"
-// @Success      200  {object}  map[string]interface{}
+// @Success      200  {object}  service.TokenPair
 // @Failure      400  {object}  map[string]interface{}
 // @Failure      401  {object}  map[string]interface{}
 // @Router       /auth/refresh [post]
@@ -107,7 +112,9 @@ func (h *AuthHandler) RefreshToken(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	httputil.JSON(w, http.StatusOK, tokenPair)
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(tokenPair)
 }
 
 type createAPIKeyRequest struct {

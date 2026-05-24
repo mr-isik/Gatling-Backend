@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"net/http"
@@ -45,6 +46,11 @@ func main() {
 		log.Fatalf("Failed to connect to DB: %v", err)
 	}
 	defer db.Close()
+
+	// 2.1 Run Database Migrations
+	if err := infra.RunMigrations(context.Background(), db, "migrations"); err != nil {
+		log.Fatalf("Failed to run migrations: %v", err)
+	}
 
 	rdb, err := infra.NewRedis(cfg.Redis)
 	if err != nil {

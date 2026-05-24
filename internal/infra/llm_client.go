@@ -22,15 +22,14 @@ func NewLLMClient(apiKey string) *LLMClient {
 		httpClient: &http.Client{
 			Timeout: 60 * time.Second,
 		},
-		baseURL: "https://api.anthropic.com/v1/messages",
+		baseURL: "https://api.openai.com/v1/chat/completions",
 	}
 }
 
 type LLMRequest struct {
 	Model     string       `json:"model"`
-	MaxTokens int          `json:"max_tokens"`
 	Messages  []LLMMessage `json:"messages"`
-	System    string       `json:"system,omitempty"`
+	MaxTokens int          `json:"max_tokens,omitempty"`
 }
 
 type LLMMessage struct {
@@ -39,19 +38,30 @@ type LLMMessage struct {
 }
 
 type LLMResponse struct {
-	Content []struct {
-		Text string `json:"text"`
-	} `json:"content"`
+	Choices []struct {
+		Message struct {
+			Content string `json:"content"`
+		} `json:"message"`
+	} `json:"choices"`
 }
 
 func (c *LLMClient) SendPrompt(ctx context.Context, systemPrompt, userPrompt string) (string, error) {
+	messages := make([]LLMMessage, 0, 2)
+	if systemPrompt != "" {
+		messages = append(messages, LLMMessage{
+			Role:    "system",
+			Content: systemPrompt,
+		})
+	}
+	messages = append(messages, LLMMessage{
+		Role:    "user",
+		Content: userPrompt,
+	})
+
 	reqBody := LLMRequest{
-		Model:     "claude-3-5-sonnet-20240620", // or claude-3-haiku for speed
+		Model:     "gpt-4o-mini", // "gpt-4o-mini" for speed/efficiency
+		Messages:  messages,
 		MaxTokens: 4096,
-		System:    systemPrompt,
-		Messages: []LLMMessage{
-			{Role: "user", Content: userPrompt},
-		},
 	}
 
 	jsonData, err := json.Marshal(reqBody)
@@ -64,8 +74,7 @@ func (c *LLMClient) SendPrompt(ctx context.Context, systemPrompt, userPrompt str
 		return "", err
 	}
 
-	req.Header.Set("x-api-key", c.apiKey)
-	req.Header.Set("anthropic-version", "2023-06-01")
+	req.Header.Set("Authorization", "Bearer "+c.apiKey)
 	req.Header.Set("Content-Type", "application/json")
 
 	resp, err := c.httpClient.Do(req)
@@ -84,9 +93,9 @@ func (c *LLMClient) SendPrompt(ctx context.Context, systemPrompt, userPrompt str
 		return "", err
 	}
 
-	if len(llmResp.Content) == 0 {
+	if len(llmResp.Choices) == 0 {
 		return "", fmt.Errorf("empty response from LLM")
 	}
 
-	return llmResp.Content[0].Text, nil
+	return llmResp.Choices[0].Message.Content, nil
 }

@@ -49,7 +49,6 @@ func (s *AuthService) Register(ctx context.Context, email, password string) (*To
 
 	createdUser, err := s.userRepo.Create(ctx, user)
 	if err != nil {
-		// PostgreSQL unique constraint error would typically return something we could map to domain.ErrAlreadyExists
 		return nil, err
 	}
 

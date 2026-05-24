@@ -201,6 +201,13 @@ definitions:
       status:
         $ref: '#/definitions/github_com_mr-isik_gatling-backend_internal_domain.RunStatus'
     type: object
+  github_com_mr-isik_gatling-backend_internal_service.TokenPair:
+    properties:
+      access_token:
+        type: string
+      refresh_token:
+        type: string
+    type: object
   internal_api_handler.addMemberRequest:
     properties:
       role:
@@ -369,8 +376,7 @@ paths:
         "200":
           description: OK
           schema:
-            additionalProperties: true
-            type: object
+            $ref: '#/definitions/github_com_mr-isik_gatling-backend_internal_service.TokenPair'
         "400":
           description: Bad Request
           schema:
@@ -402,8 +408,7 @@ paths:
         "200":
           description: OK
           schema:
-            additionalProperties: true
-            type: object
+            $ref: '#/definitions/github_com_mr-isik_gatling-backend_internal_service.TokenPair'
         "400":
           description: Bad Request
           schema:
@@ -435,8 +440,7 @@ paths:
         "201":
           description: Created
           schema:
-            additionalProperties: true
-            type: object
+            $ref: '#/definitions/github_com_mr-isik_gatling-backend_internal_service.TokenPair'
         "400":
           description: Bad Request
           schema:
