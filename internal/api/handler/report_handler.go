@@ -1,9 +1,7 @@
 package handler
 
 import (
-	"net/http"
-
-	"github.com/mr-isik/gatling-backend/internal/api/httputil"
+	"github.com/gofiber/fiber/v2"
 	"github.com/mr-isik/gatling-backend/internal/domain"
 	"github.com/mr-isik/gatling-backend/internal/service"
 )
@@ -31,14 +29,13 @@ func NewReportHandler(reportService *service.ReportService, baselineService *ser
 // @Failure      401  {object}  map[string]interface{}
 // @Failure      500  {object}  map[string]interface{}
 // @Router       /v1/reports/{id} [get]
-func (h *ReportHandler) Get(w http.ResponseWriter, r *http.Request) {
-	id := r.PathValue("id")
-	report, err := h.reportService.Get(r.Context(), id)
+func (h *ReportHandler) Get(c *fiber.Ctx) error {
+	id := c.Params("id")
+	report, err := h.reportService.Get(c.UserContext(), id)
 	if err != nil {
-		httputil.JSONError(w, http.StatusInternalServerError, err)
-		return
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 	}
-	httputil.JSON(w, http.StatusOK, report)
+	return c.Status(fiber.StatusOK).JSON(report)
 }
 
 // AISummary godoc
@@ -52,14 +49,13 @@ func (h *ReportHandler) Get(w http.ResponseWriter, r *http.Request) {
 // @Failure      401  {object}  map[string]interface{}
 // @Failure      500  {object}  map[string]interface{}
 // @Router       /v1/reports/{id}/ai-summary [get]
-func (h *ReportHandler) AISummary(w http.ResponseWriter, r *http.Request) {
-	id := r.PathValue("id")
-	report, err := h.reportService.AISummary(r.Context(), id)
+func (h *ReportHandler) AISummary(c *fiber.Ctx) error {
+	id := c.Params("id")
+	report, err := h.reportService.AISummary(c.UserContext(), id)
 	if err != nil {
-		httputil.JSONError(w, http.StatusInternalServerError, err)
-		return
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 	}
-	httputil.JSON(w, http.StatusOK, report)
+	return c.Status(fiber.StatusOK).JSON(report)
 }
 
 type exportRequest struct {
@@ -79,24 +75,21 @@ type exportRequest struct {
 // @Failure      400  {object}  map[string]interface{}
 // @Failure      500  {object}  map[string]interface{}
 // @Router       /v1/reports/{id}/export [post]
-func (h *ReportHandler) Export(w http.ResponseWriter, r *http.Request) {
-	id := r.PathValue("id")
+func (h *ReportHandler) Export(c *fiber.Ctx) error {
+	id := c.Params("id")
 	var req exportRequest
-	if err := httputil.ReadJSON(r, &req); err != nil {
-		httputil.JSONError(w, http.StatusBadRequest, err)
-		return
+	if err := c.BodyParser(&req); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
 	}
 
-	data, err := h.reportService.Export(r.Context(), id, req.Format)
+	data, err := h.reportService.Export(c.UserContext(), id, req.Format)
 	if err != nil {
-		httputil.JSONError(w, http.StatusInternalServerError, err)
-		return
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 	}
 
 	// Just a stub for downloading
-	w.Header().Set("Content-Type", "application/octet-stream")
-	w.WriteHeader(http.StatusOK)
-	w.Write(data)
+	c.Set("Content-Type", "application/octet-stream")
+	return c.Status(fiber.StatusOK).Send(data)
 }
 
 // Compare godoc
@@ -111,20 +104,18 @@ func (h *ReportHandler) Export(w http.ResponseWriter, r *http.Request) {
 // @Failure      400  {object}  map[string]interface{}
 // @Failure      500  {object}  map[string]interface{}
 // @Router       /v1/reports/compare [get]
-func (h *ReportHandler) Compare(w http.ResponseWriter, r *http.Request) {
-	run1 := r.URL.Query().Get("run1")
-	run2 := r.URL.Query().Get("run2")
+func (h *ReportHandler) Compare(c *fiber.Ctx) error {
+	run1 := c.Query("run1")
+	run2 := c.Query("run2")
 
 	if run1 == "" || run2 == "" {
-		httputil.JSONError(w, http.StatusBadRequest, domain.ErrBadRequest)
-		return
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": domain.ErrBadRequest.Error()})
 	}
 
-	comp, err := h.baselineService.CompareWithBaseline(r.Context(), run1, run2)
+	comp, err := h.baselineService.CompareWithBaseline(c.UserContext(), run1, run2)
 	if err != nil {
-		httputil.JSONError(w, http.StatusInternalServerError, err)
-		return
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 	}
 
-	httputil.JSON(w, http.StatusOK, comp)
+	return c.Status(fiber.StatusOK).JSON(comp)
 }

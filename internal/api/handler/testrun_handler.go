@@ -1,10 +1,9 @@
 package handler
 
 import (
-	"net/http"
 	"time"
 
-	"github.com/mr-isik/gatling-backend/internal/api/httputil"
+	"github.com/gofiber/fiber/v2"
 	"github.com/mr-isik/gatling-backend/internal/api/middleware"
 	"github.com/mr-isik/gatling-backend/internal/domain"
 	"github.com/mr-isik/gatling-backend/internal/service"
@@ -36,21 +35,19 @@ type startRunRequest struct {
 // @Failure      400  {object}  map[string]interface{}
 // @Failure      500  {object}  map[string]interface{}
 // @Router       /v1/runs [post]
-func (h *TestRunHandler) Start(w http.ResponseWriter, r *http.Request) {
+func (h *TestRunHandler) Start(c *fiber.Ctx) error {
 	var req startRunRequest
-	if err := httputil.ReadJSON(r, &req); err != nil {
-		httputil.JSONError(w, http.StatusBadRequest, err)
-		return
+	if err := c.BodyParser(&req); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
 	}
 
-	userID := middleware.GetUserIDFromContext(r.Context())
-	runID, err := h.runService.Start(r.Context(), req.ScenarioID, req.ProjectID, userID, req.Config)
+	userID := middleware.GetUserIDFromContext(c.UserContext())
+	runID, err := h.runService.Start(c.UserContext(), req.ScenarioID, req.ProjectID, userID, req.Config)
 	if err != nil {
-		httputil.JSONError(w, http.StatusInternalServerError, err)
-		return
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 	}
 
-	httputil.JSON(w, http.StatusCreated, map[string]string{"run_id": runID})
+	return c.Status(fiber.StatusCreated).JSON(fiber.Map{"run_id": runID})
 }
 
 // List godoc
@@ -65,20 +62,18 @@ func (h *TestRunHandler) Start(w http.ResponseWriter, r *http.Request) {
 // @Failure      401  {object}  map[string]interface{}
 // @Failure      500  {object}  map[string]interface{}
 // @Router       /v1/runs [get]
-func (h *TestRunHandler) List(w http.ResponseWriter, r *http.Request) {
-	projectID := r.URL.Query().Get("project_id")
+func (h *TestRunHandler) List(c *fiber.Ctx) error {
+	projectID := c.Query("project_id")
 	if projectID == "" {
-		httputil.JSONError(w, http.StatusBadRequest, domain.ErrBadRequest)
-		return
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": domain.ErrBadRequest.Error()})
 	}
 
-	runs, err := h.runService.List(r.Context(), projectID)
+	runs, err := h.runService.List(c.UserContext(), projectID)
 	if err != nil {
-		httputil.JSONError(w, http.StatusInternalServerError, err)
-		return
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 	}
 
-	httputil.JSON(w, http.StatusOK, runs)
+	return c.Status(fiber.StatusOK).JSON(runs)
 }
 
 // Get godoc
@@ -93,15 +88,14 @@ func (h *TestRunHandler) List(w http.ResponseWriter, r *http.Request) {
 // @Failure      404  {object}  map[string]interface{}
 // @Failure      500  {object}  map[string]interface{}
 // @Router       /v1/runs/{id} [get]
-func (h *TestRunHandler) Get(w http.ResponseWriter, r *http.Request) {
-	id := r.PathValue("id")
-	run, err := h.runService.GetByID(r.Context(), id)
+func (h *TestRunHandler) Get(c *fiber.Ctx) error {
+	id := c.Params("id")
+	run, err := h.runService.GetByID(c.UserContext(), id)
 	if err != nil {
-		httputil.JSONError(w, http.StatusInternalServerError, err)
-		return
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 	}
 
-	httputil.JSON(w, http.StatusOK, run)
+	return c.Status(fiber.StatusOK).JSON(run)
 }
 
 // Stop godoc
@@ -115,14 +109,13 @@ func (h *TestRunHandler) Get(w http.ResponseWriter, r *http.Request) {
 // @Failure      401  {object}  map[string]interface{}
 // @Failure      500  {object}  map[string]interface{}
 // @Router       /v1/runs/{id}/stop [post]
-func (h *TestRunHandler) Stop(w http.ResponseWriter, r *http.Request) {
-	id := r.PathValue("id")
-	if err := h.runService.Stop(r.Context(), id); err != nil {
-		httputil.JSONError(w, http.StatusInternalServerError, err)
-		return
+func (h *TestRunHandler) Stop(c *fiber.Ctx) error {
+	id := c.Params("id")
+	if err := h.runService.Stop(c.UserContext(), id); err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 	}
 
-	httputil.JSON(w, http.StatusOK, map[string]string{"status": "stopping"})
+	return c.Status(fiber.StatusOK).JSON(fiber.Map{"status": "stopping"})
 }
 
 // Metrics godoc
@@ -138,11 +131,11 @@ func (h *TestRunHandler) Stop(w http.ResponseWriter, r *http.Request) {
 // @Failure      401  {object}  map[string]interface{}
 // @Failure      500  {object}  map[string]interface{}
 // @Router       /v1/runs/{id}/metrics [get]
-func (h *TestRunHandler) Metrics(w http.ResponseWriter, r *http.Request) {
-	id := r.PathValue("id")
+func (h *TestRunHandler) Metrics(c *fiber.Ctx) error {
+	id := c.Params("id")
 
-	fromStr := r.URL.Query().Get("from")
-	toStr := r.URL.Query().Get("to")
+	fromStr := c.Query("from")
+	toStr := c.Query("to")
 
 	from, err := time.Parse(time.RFC3339, fromStr)
 	if err != nil {
@@ -153,16 +146,15 @@ func (h *TestRunHandler) Metrics(w http.ResponseWriter, r *http.Request) {
 		to = time.Now()
 	}
 
-	metrics, err := h.runService.GetMetrics(r.Context(), id, from, to)
+	metrics, err := h.runService.GetMetrics(c.UserContext(), id, from, to)
 	if err != nil {
-		httputil.JSONError(w, http.StatusInternalServerError, err)
-		return
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 	}
 
-	httputil.JSON(w, http.StatusOK, metrics)
+	return c.Status(fiber.StatusOK).JSON(metrics)
 }
 
-func (h *TestRunHandler) Logs(w http.ResponseWriter, r *http.Request) {
+func (h *TestRunHandler) Logs(c *fiber.Ctx) error {
 	// Stub for logs
-	httputil.JSON(w, http.StatusOK, []string{"log1", "log2"})
+	return c.Status(fiber.StatusOK).JSON([]string{"log1", "log2"})
 }

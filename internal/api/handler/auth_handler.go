@@ -1,10 +1,7 @@
 package handler
 
 import (
-	"encoding/json"
-	"net/http"
-
-	"github.com/mr-isik/gatling-backend/internal/api/httputil"
+	"github.com/gofiber/fiber/v2"
 	"github.com/mr-isik/gatling-backend/internal/api/middleware"
 	"github.com/mr-isik/gatling-backend/internal/service"
 )
@@ -32,22 +29,18 @@ type registerRequest struct {
 // @Success      201  {object}  service.TokenPair
 // @Failure      400  {object}  map[string]interface{}
 // @Router       /auth/register [post]
-func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
+func (h *AuthHandler) Register(c *fiber.Ctx) error {
 	var req registerRequest
-	if err := httputil.ReadJSON(r, &req); err != nil {
-		httputil.JSONError(w, http.StatusBadRequest, err)
-		return
+	if err := c.BodyParser(&req); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
 	}
 
-	tokenPair, err := h.authService.Register(r.Context(), req.Email, req.Password)
+	tokenPair, err := h.authService.Register(c.UserContext(), req.Email, req.Password)
 	if err != nil {
-		httputil.JSONError(w, http.StatusBadRequest, err)
-		return
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(tokenPair)
+	return c.Status(fiber.StatusCreated).JSON(tokenPair)
 }
 
 type loginRequest struct {
@@ -66,22 +59,18 @@ type loginRequest struct {
 // @Failure      400  {object}  map[string]interface{}
 // @Failure      401  {object}  map[string]interface{}
 // @Router       /auth/login [post]
-func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
+func (h *AuthHandler) Login(c *fiber.Ctx) error {
 	var req loginRequest
-	if err := httputil.ReadJSON(r, &req); err != nil {
-		httputil.JSONError(w, http.StatusBadRequest, err)
-		return
+	if err := c.BodyParser(&req); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
 	}
 
-	tokenPair, err := h.authService.Login(r.Context(), req.Email, req.Password)
+	tokenPair, err := h.authService.Login(c.UserContext(), req.Email, req.Password)
 	if err != nil {
-		httputil.JSONError(w, http.StatusUnauthorized, err)
-		return
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": err.Error()})
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(tokenPair)
+	return c.Status(fiber.StatusOK).JSON(tokenPair)
 }
 
 type refreshRequest struct {
@@ -99,22 +88,18 @@ type refreshRequest struct {
 // @Failure      400  {object}  map[string]interface{}
 // @Failure      401  {object}  map[string]interface{}
 // @Router       /auth/refresh [post]
-func (h *AuthHandler) RefreshToken(w http.ResponseWriter, r *http.Request) {
+func (h *AuthHandler) RefreshToken(c *fiber.Ctx) error {
 	var req refreshRequest
-	if err := httputil.ReadJSON(r, &req); err != nil {
-		httputil.JSONError(w, http.StatusBadRequest, err)
-		return
+	if err := c.BodyParser(&req); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
 	}
 
-	tokenPair, err := h.authService.RefreshToken(r.Context(), req.RefreshToken)
+	tokenPair, err := h.authService.RefreshToken(c.UserContext(), req.RefreshToken)
 	if err != nil {
-		httputil.JSONError(w, http.StatusUnauthorized, err)
-		return
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": err.Error()})
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(tokenPair)
+	return c.Status(fiber.StatusOK).JSON(tokenPair)
 }
 
 type createAPIKeyRequest struct {
@@ -133,21 +118,19 @@ type createAPIKeyRequest struct {
 // @Failure      400  {object}  map[string]interface{}
 // @Failure      500  {object}  map[string]interface{}
 // @Router       /auth/api-keys [post]
-func (h *AuthHandler) CreateAPIKey(w http.ResponseWriter, r *http.Request) {
+func (h *AuthHandler) CreateAPIKey(c *fiber.Ctx) error {
 	var req createAPIKeyRequest
-	if err := httputil.ReadJSON(r, &req); err != nil {
-		httputil.JSONError(w, http.StatusBadRequest, err)
-		return
+	if err := c.BodyParser(&req); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
 	}
 
-	userID := middleware.GetUserIDFromContext(r.Context())
-	rawKey, keyModel, err := h.authService.CreateAPIKey(r.Context(), userID, req.Name)
+	userID := middleware.GetUserIDFromContext(c.UserContext())
+	rawKey, keyModel, err := h.authService.CreateAPIKey(c.UserContext(), userID, req.Name)
 	if err != nil {
-		httputil.JSONError(w, http.StatusInternalServerError, err)
-		return
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 	}
 
-	httputil.JSON(w, http.StatusCreated, map[string]interface{}{
+	return c.Status(fiber.StatusCreated).JSON(fiber.Map{
 		"raw_key": rawKey,
 		"api_key": keyModel,
 	})
@@ -164,17 +147,15 @@ func (h *AuthHandler) CreateAPIKey(w http.ResponseWriter, r *http.Request) {
 // @Failure      400  {object}  map[string]interface{}
 // @Failure      500  {object}  map[string]interface{}
 // @Router       /auth/api-keys/{id} [delete]
-func (h *AuthHandler) DeleteAPIKey(w http.ResponseWriter, r *http.Request) {
-	id := r.PathValue("id")
+func (h *AuthHandler) DeleteAPIKey(c *fiber.Ctx) error {
+	id := c.Params("id")
 	if id == "" {
-		httputil.JSONError(w, http.StatusBadRequest, nil)
-		return
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "ID is required"})
 	}
 
-	if err := h.authService.DeleteAPIKey(r.Context(), id); err != nil {
-		httputil.JSONError(w, http.StatusInternalServerError, err)
-		return
+	if err := h.authService.DeleteAPIKey(c.UserContext(), id); err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 	}
 
-	w.WriteHeader(http.StatusNoContent)
+	return c.SendStatus(fiber.StatusNoContent)
 }

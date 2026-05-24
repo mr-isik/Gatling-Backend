@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"net/http"
 
+	"github.com/gofiber/fiber/v2"
 	"github.com/mr-isik/gatling-backend/internal/api"
 	"github.com/mr-isik/gatling-backend/internal/api/handler"
 	"github.com/mr-isik/gatling-backend/internal/api/ws"
@@ -99,7 +99,10 @@ func main() {
 	projectHandler := handler.NewProjectHandler(projectRepo)
 	wsHandler := handler.NewWSHandler(hub)
 
-	router := api.SetupRoutes(
+	app := fiber.New()
+
+	api.SetupRoutes(
+		app,
 		authHandler, scenarioHandler, runHandler,
 		reportHandler, projectHandler, wsHandler, cfg.JWT.Secret,
 	)
@@ -109,7 +112,7 @@ func main() {
 		serverPort = "8080"
 	}
 	log.Printf("Server listening on :%s", serverPort)
-	if err := http.ListenAndServe(":"+serverPort, router); err != nil {
+	if err := app.Listen(":" + serverPort); err != nil {
 		log.Fatalf("Server failed: %v", err)
 	}
 }

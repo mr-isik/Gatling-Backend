@@ -2,10 +2,9 @@ package middleware
 
 import (
 	"context"
-	"net/http"
 	"strings"
 
-	"github.com/mr-isik/gatling-backend/internal/api/httputil"
+	"github.com/gofiber/fiber/v2"
 	"github.com/mr-isik/gatling-backend/internal/domain"
 	"github.com/mr-isik/gatling-backend/internal/service"
 )
@@ -14,31 +13,29 @@ type contextKey string
 
 const claimsKey contextKey = "claims"
 
-func AuthMiddleware(jwtSecret string) func(http.Handler) http.Handler {
-	return func(next http.Handler) http.Handler {
-		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			authHeader := r.Header.Get("Authorization")
-			if authHeader == "" {
-				httputil.JSONError(w, http.StatusUnauthorized, domain.ErrUnauthorized)
-				return
-			}
+func AuthMiddleware(jwtSecret string) fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		authHeader := c.Get("Authorization")
+		if authHeader == "" {
+			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": domain.ErrUnauthorized.Error()})
+		}
 
-			parts := strings.Split(authHeader, " ")
-			if len(parts) != 2 || parts[0] != "Bearer" {
-				httputil.JSONError(w, http.StatusUnauthorized, domain.ErrUnauthorized)
-				return
-			}
+		parts := strings.Split(authHeader, " ")
+		if len(parts) != 2 || parts[0] != "Bearer" {
+			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": domain.ErrUnauthorized.Error()})
+		}
 
-			tokenStr := parts[1]
-			claims, err := service.ValidateToken(tokenStr, jwtSecret)
-			if err != nil {
-				httputil.JSONError(w, http.StatusUnauthorized, domain.ErrUnauthorized)
-				return
-			}
+		tokenStr := parts[1]
+		claims, err := service.ValidateToken(tokenStr, jwtSecret)
+		if err != nil {
+			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": domain.ErrUnauthorized.Error()})
+		}
 
-			ctx := context.WithValue(r.Context(), claimsKey, claims)
-			next.ServeHTTP(w, r.WithContext(ctx))
-		})
+		// Store claims in user context
+		ctx := context.WithValue(c.UserContext(), claimsKey, claims)
+		c.SetUserContext(ctx)
+
+		return c.Next()
 	}
 }
 

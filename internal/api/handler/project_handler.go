@@ -1,9 +1,7 @@
 package handler
 
 import (
-	"net/http"
-
-	"github.com/mr-isik/gatling-backend/internal/api/httputil"
+	"github.com/gofiber/fiber/v2"
 	"github.com/mr-isik/gatling-backend/internal/api/middleware"
 	"github.com/mr-isik/gatling-backend/internal/domain"
 	"github.com/mr-isik/gatling-backend/internal/repository"
@@ -27,15 +25,14 @@ func NewProjectHandler(projectRepo repository.ProjectRepository) *ProjectHandler
 // @Failure      401  {object}  map[string]interface{}
 // @Failure      500  {object}  map[string]interface{}
 // @Router       /v1/projects [get]
-func (h *ProjectHandler) List(w http.ResponseWriter, r *http.Request) {
-	userID := middleware.GetUserIDFromContext(r.Context())
-	projects, err := h.projectRepo.List(r.Context(), userID)
+func (h *ProjectHandler) List(c *fiber.Ctx) error {
+	userID := middleware.GetUserIDFromContext(c.UserContext())
+	projects, err := h.projectRepo.List(c.UserContext(), userID)
 	if err != nil {
-		httputil.JSONError(w, http.StatusInternalServerError, err)
-		return
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 	}
 
-	httputil.JSON(w, http.StatusOK, projects)
+	return c.Status(fiber.StatusOK).JSON(projects)
 }
 
 // Create godoc
@@ -51,22 +48,20 @@ func (h *ProjectHandler) List(w http.ResponseWriter, r *http.Request) {
 // @Failure      401  {object}  map[string]interface{}
 // @Failure      500  {object}  map[string]interface{}
 // @Router       /v1/projects [post]
-func (h *ProjectHandler) Create(w http.ResponseWriter, r *http.Request) {
+func (h *ProjectHandler) Create(c *fiber.Ctx) error {
 	var project domain.Project
-	if err := httputil.ReadJSON(r, &project); err != nil {
-		httputil.JSONError(w, http.StatusBadRequest, err)
-		return
+	if err := c.BodyParser(&project); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
 	}
 
-	project.OwnerID = middleware.GetUserIDFromContext(r.Context())
+	project.OwnerID = middleware.GetUserIDFromContext(c.UserContext())
 
-	created, err := h.projectRepo.Create(r.Context(), &project)
+	created, err := h.projectRepo.Create(c.UserContext(), &project)
 	if err != nil {
-		httputil.JSONError(w, http.StatusInternalServerError, err)
-		return
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 	}
 
-	httputil.JSON(w, http.StatusCreated, created)
+	return c.Status(fiber.StatusCreated).JSON(created)
 }
 
 type addMemberRequest struct {
@@ -87,20 +82,18 @@ type addMemberRequest struct {
 // @Failure      400  {object}  map[string]interface{}
 // @Failure      500  {object}  map[string]interface{}
 // @Router       /v1/projects/{id}/members [post]
-func (h *ProjectHandler) AddMember(w http.ResponseWriter, r *http.Request) {
-	id := r.PathValue("id")
+func (h *ProjectHandler) AddMember(c *fiber.Ctx) error {
+	id := c.Params("id")
 	var req addMemberRequest
-	if err := httputil.ReadJSON(r, &req); err != nil {
-		httputil.JSONError(w, http.StatusBadRequest, err)
-		return
+	if err := c.BodyParser(&req); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
 	}
 
-	if err := h.projectRepo.AddMember(r.Context(), id, req.UserID, req.Role); err != nil {
-		httputil.JSONError(w, http.StatusInternalServerError, err)
-		return
+	if err := h.projectRepo.AddMember(c.UserContext(), id, req.UserID, req.Role); err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 	}
 
-	w.WriteHeader(http.StatusOK)
+	return c.SendStatus(fiber.StatusOK)
 }
 
 // Usage godoc
@@ -113,9 +106,9 @@ func (h *ProjectHandler) AddMember(w http.ResponseWriter, r *http.Request) {
 // @Success      200  {object}  map[string]interface{}
 // @Failure      401  {object}  map[string]interface{}
 // @Router       /v1/projects/{id}/usage [get]
-func (h *ProjectHandler) Usage(w http.ResponseWriter, r *http.Request) {
+func (h *ProjectHandler) Usage(c *fiber.Ctx) error {
 	// Stub
-	httputil.JSON(w, http.StatusOK, map[string]interface{}{
+	return c.Status(fiber.StatusOK).JSON(fiber.Map{
 		"total_runs": 10,
 		"total_vus":  1500,
 	})

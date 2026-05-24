@@ -1,9 +1,7 @@
 package handler
 
 import (
-	"net/http"
-
-	"github.com/mr-isik/gatling-backend/internal/api/httputil"
+	"github.com/gofiber/fiber/v2"
 	"github.com/mr-isik/gatling-backend/internal/api/middleware"
 	"github.com/mr-isik/gatling-backend/internal/domain"
 	"github.com/mr-isik/gatling-backend/internal/service"
@@ -29,20 +27,18 @@ func NewScenarioHandler(scenarioService *service.ScenarioService) *ScenarioHandl
 // @Failure      401  {object}  map[string]interface{}
 // @Failure      500  {object}  map[string]interface{}
 // @Router       /v1/scenarios [get]
-func (h *ScenarioHandler) List(w http.ResponseWriter, r *http.Request) {
-	projectID := r.URL.Query().Get("project_id")
+func (h *ScenarioHandler) List(c *fiber.Ctx) error {
+	projectID := c.Query("project_id")
 	if projectID == "" {
-		httputil.JSONError(w, http.StatusBadRequest, domain.ErrBadRequest)
-		return
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": domain.ErrBadRequest.Error()})
 	}
 
-	scenarios, err := h.scenarioService.List(r.Context(), projectID)
+	scenarios, err := h.scenarioService.List(c.UserContext(), projectID)
 	if err != nil {
-		httputil.JSONError(w, http.StatusInternalServerError, err)
-		return
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 	}
 
-	httputil.JSON(w, http.StatusOK, scenarios)
+	return c.Status(fiber.StatusOK).JSON(scenarios)
 }
 
 // Create godoc
@@ -58,22 +54,20 @@ func (h *ScenarioHandler) List(w http.ResponseWriter, r *http.Request) {
 // @Failure      401  {object}  map[string]interface{}
 // @Failure      500  {object}  map[string]interface{}
 // @Router       /v1/scenarios [post]
-func (h *ScenarioHandler) Create(w http.ResponseWriter, r *http.Request) {
+func (h *ScenarioHandler) Create(c *fiber.Ctx) error {
 	var scenario domain.Scenario
-	if err := httputil.ReadJSON(r, &scenario); err != nil {
-		httputil.JSONError(w, http.StatusBadRequest, err)
-		return
+	if err := c.BodyParser(&scenario); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
 	}
 
-	scenario.CreatedBy = middleware.GetUserIDFromContext(r.Context())
+	scenario.CreatedBy = middleware.GetUserIDFromContext(c.UserContext())
 
-	created, err := h.scenarioService.Create(r.Context(), &scenario)
+	created, err := h.scenarioService.Create(c.UserContext(), &scenario)
 	if err != nil {
-		httputil.JSONError(w, http.StatusInternalServerError, err)
-		return
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 	}
 
-	httputil.JSON(w, http.StatusCreated, created)
+	return c.Status(fiber.StatusCreated).JSON(created)
 }
 
 // Get godoc
@@ -88,19 +82,17 @@ func (h *ScenarioHandler) Create(w http.ResponseWriter, r *http.Request) {
 // @Failure      404  {object}  map[string]interface{}
 // @Failure      500  {object}  map[string]interface{}
 // @Router       /v1/scenarios/{id} [get]
-func (h *ScenarioHandler) Get(w http.ResponseWriter, r *http.Request) {
-	id := r.PathValue("id")
-	scenario, err := h.scenarioService.GetByID(r.Context(), id)
+func (h *ScenarioHandler) Get(c *fiber.Ctx) error {
+	id := c.Params("id")
+	scenario, err := h.scenarioService.GetByID(c.UserContext(), id)
 	if err != nil {
 		if err == domain.ErrNotFound {
-			httputil.JSONError(w, http.StatusNotFound, err)
-		} else {
-			httputil.JSONError(w, http.StatusInternalServerError, err)
+			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": err.Error()})
 		}
-		return
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 	}
 
-	httputil.JSON(w, http.StatusOK, scenario)
+	return c.Status(fiber.StatusOK).JSON(scenario)
 }
 
 // Update godoc
@@ -117,22 +109,20 @@ func (h *ScenarioHandler) Get(w http.ResponseWriter, r *http.Request) {
 // @Failure      401  {object}  map[string]interface{}
 // @Failure      500  {object}  map[string]interface{}
 // @Router       /v1/scenarios/{id} [put]
-func (h *ScenarioHandler) Update(w http.ResponseWriter, r *http.Request) {
-	id := r.PathValue("id")
+func (h *ScenarioHandler) Update(c *fiber.Ctx) error {
+	id := c.Params("id")
 	var scenario domain.Scenario
-	if err := httputil.ReadJSON(r, &scenario); err != nil {
-		httputil.JSONError(w, http.StatusBadRequest, err)
-		return
+	if err := c.BodyParser(&scenario); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
 	}
 	scenario.ID = id
 
-	updated, err := h.scenarioService.Update(r.Context(), &scenario)
+	updated, err := h.scenarioService.Update(c.UserContext(), &scenario)
 	if err != nil {
-		httputil.JSONError(w, http.StatusInternalServerError, err)
-		return
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 	}
 
-	httputil.JSON(w, http.StatusOK, updated)
+	return c.Status(fiber.StatusOK).JSON(updated)
 }
 
 // Delete godoc
@@ -146,14 +136,13 @@ func (h *ScenarioHandler) Update(w http.ResponseWriter, r *http.Request) {
 // @Failure      401  {object}  map[string]interface{}
 // @Failure      500  {object}  map[string]interface{}
 // @Router       /v1/scenarios/{id} [delete]
-func (h *ScenarioHandler) Delete(w http.ResponseWriter, r *http.Request) {
-	id := r.PathValue("id")
-	if err := h.scenarioService.Delete(r.Context(), id); err != nil {
-		httputil.JSONError(w, http.StatusInternalServerError, err)
-		return
+func (h *ScenarioHandler) Delete(c *fiber.Ctx) error {
+	id := c.Params("id")
+	if err := h.scenarioService.Delete(c.UserContext(), id); err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 	}
 
-	w.WriteHeader(http.StatusNoContent)
+	return c.SendStatus(fiber.StatusNoContent)
 }
 
 type generateRequest struct {
@@ -172,20 +161,18 @@ type generateRequest struct {
 // @Failure      400  {object}  map[string]interface{}
 // @Failure      500  {object}  map[string]interface{}
 // @Router       /v1/scenarios/generate [post]
-func (h *ScenarioHandler) Generate(w http.ResponseWriter, r *http.Request) {
+func (h *ScenarioHandler) Generate(c *fiber.Ctx) error {
 	var req generateRequest
-	if err := httputil.ReadJSON(r, &req); err != nil {
-		httputil.JSONError(w, http.StatusBadRequest, err)
-		return
+	if err := c.BodyParser(&req); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
 	}
 
-	scenario, err := h.scenarioService.Generate(r.Context(), req.Prompt)
+	scenario, err := h.scenarioService.Generate(c.UserContext(), req.Prompt)
 	if err != nil {
-		httputil.JSONError(w, http.StatusInternalServerError, err)
-		return
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 	}
 
-	httputil.JSON(w, http.StatusOK, scenario)
+	return c.Status(fiber.StatusOK).JSON(scenario)
 }
 
 type cloneRequest struct {
@@ -205,19 +192,17 @@ type cloneRequest struct {
 // @Failure      400  {object}  map[string]interface{}
 // @Failure      500  {object}  map[string]interface{}
 // @Router       /v1/scenarios/{id}/clone [post]
-func (h *ScenarioHandler) Clone(w http.ResponseWriter, r *http.Request) {
-	id := r.PathValue("id")
+func (h *ScenarioHandler) Clone(c *fiber.Ctx) error {
+	id := c.Params("id")
 	var req cloneRequest
-	if err := httputil.ReadJSON(r, &req); err != nil {
-		httputil.JSONError(w, http.StatusBadRequest, err)
-		return
+	if err := c.BodyParser(&req); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
 	}
 
-	cloned, err := h.scenarioService.Clone(r.Context(), id, req.Name)
+	cloned, err := h.scenarioService.Clone(c.UserContext(), id, req.Name)
 	if err != nil {
-		httputil.JSONError(w, http.StatusInternalServerError, err)
-		return
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 	}
 
-	httputil.JSON(w, http.StatusCreated, cloned)
+	return c.Status(fiber.StatusCreated).JSON(cloned)
 }
