@@ -47,7 +47,7 @@ func (h *TestRunHandler) Start(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 	}
 
-	return c.Status(fiber.StatusCreated).JSON(fiber.Map{"run_id": runID})
+	return c.Status(fiber.StatusCreated).JSON(fiber.Map{"id": runID})
 }
 
 // List godoc

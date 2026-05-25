@@ -146,7 +146,9 @@ func (h *ScenarioHandler) Delete(c *fiber.Ctx) error {
 }
 
 type generateRequest struct {
-	Prompt string `json:"prompt"`
+	Prompt     string             `json:"prompt"`
+	TargetURL  string             `json:"target_url,omitempty"`
+	ApiContext *domain.ApiContext `json:"api_context,omitempty"`
 }
 
 // Generate godoc
@@ -167,7 +169,7 @@ func (h *ScenarioHandler) Generate(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
 	}
 
-	scenario, err := h.scenarioService.Generate(c.UserContext(), req.Prompt)
+	scenario, err := h.scenarioService.Generate(c.UserContext(), req.Prompt, req.TargetURL, req.ApiContext)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 	}
@@ -205,4 +207,72 @@ func (h *ScenarioHandler) Clone(c *fiber.Ctx) error {
 	}
 
 	return c.Status(fiber.StatusCreated).JSON(cloned)
+}
+
+// ParseApiDoc godoc
+// @Summary      Parse API Documentation
+// @Description  Parses uploaded API documentation (OpenAPI/Swagger, cURL, URL) and returns normalized endpoints.
+// @Tags         Scenario
+// @Security     BearerAuth
+// @Accept       multipart/form-data
+// @Produce      json
+// @Param        source formData string true "Source type: openapi, curl, url"
+// @Param        file   formData file   false "API doc file (for openapi)"
+// @Param        content formData string false "Raw content (for curl/url)"
+// @Success      200  {object}  domain.ApiContext
+// @Failure      400  {object}  map[string]interface{}
+// @Failure      500  {object}  map[string]interface{}
+// @Router       /v1/scenarios/parse-api-doc [post]
+func (h *ScenarioHandler) ParseApiDoc(c *fiber.Ctx) error {
+	source := c.FormValue("source")
+	parser := service.NewApiDocParser()
+
+	switch source {
+	case "openapi":
+		fileHeader, err := c.FormFile("file")
+		if err != nil {
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "file is required for openapi source"})
+		}
+		file, err := fileHeader.Open()
+		if err != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+		}
+		defer file.Close()
+
+		bytes := make([]byte, fileHeader.Size)
+		if _, err := file.Read(bytes); err != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+		}
+
+		apiCtx, err := parser.ParseOpenAPISpec(c.UserContext(), bytes)
+		if err != nil {
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
+		}
+		return c.Status(fiber.StatusOK).JSON(apiCtx)
+
+	case "curl":
+		content := c.FormValue("content")
+		if content == "" {
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "content is required for curl source"})
+		}
+		apiCtx, err := parser.ParseCurlCommands(content)
+		if err != nil {
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
+		}
+		return c.Status(fiber.StatusOK).JSON(apiCtx)
+
+	case "url":
+		content := c.FormValue("content")
+		if content == "" {
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "url content is required for url source"})
+		}
+		apiCtx, err := parser.FetchAndParseURL(c.UserContext(), content)
+		if err != nil {
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
+		}
+		return c.Status(fiber.StatusOK).JSON(apiCtx)
+
+	default:
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid source type"})
+	}
 }

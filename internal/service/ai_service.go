@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"strings"
 
 	"github.com/mr-isik/gatling-backend/internal/domain"
 	"github.com/mr-isik/gatling-backend/internal/infra"
@@ -18,34 +17,43 @@ func NewAIService(llm *infra.LLMClient) *AIService {
 	return &AIService{llm: llm}
 }
 
-func (s *AIService) GenerateScenario(ctx context.Context, prompt string) (*domain.Scenario, error) {
-	systemPrompt := `Sen bir load test uzmanısın. Kullanıcının tanımına göre HTTP test senaryosu JSON olarak üret. Yanıtın SADECE JSON formatında olmalı.
-Beklenen JSON yapısı:
+func (s *AIService) GenerateScenario(ctx context.Context, prompt string, targetURL string, apiCtx *domain.ApiContext) (*domain.Scenario, error) {
+	systemPrompt := `You are an expert load testing engineer. Generate an HTTP load test scenario as a JSON object.
+You MUST respond with ONLY a valid JSON object — no prose, no markdown, no explanation.
+The JSON MUST follow this exact schema:
 {
-  "name": "Senaryo Adı",
-  "description": "Senaryo açıklaması",
+  "name": "string",
+  "description": "string",
   "steps": [
     {
       "order": 1,
-      "name": "Step 1",
-      "method": "GET",
-      "url": "https://api.example.com/v1/users",
-      "headers": {"Content-Type": "application/json"},
-      "body": "",
+      "name": "string",
+      "method": "GET|POST|PUT|DELETE|PATCH",
+      "url": "https://...",
+      "headers": {"key": "value"},
+      "body": "string or empty",
       "think_time_ms": 1000
     }
   ]
 }`
 
-	respText, err := s.llm.SendPrompt(ctx, systemPrompt, prompt)
+	if targetURL != "" {
+		systemPrompt += fmt.Sprintf("\n\nIMPORTANT: The target application's base URL is: %s\nYou MUST use this exact base URL for ALL step URLs. Do NOT invent or substitute any other domain.", targetURL)
+	}
+
+	if apiCtx != nil && len(apiCtx.Endpoints) > 0 {
+		// If no explicit targetURL but apiCtx has a base_url, remind the AI
+		if targetURL == "" && apiCtx.BaseURL != "" {
+			systemPrompt += fmt.Sprintf("\n\nThe API base URL from the documentation is: %s — use it for all step URLs.", apiCtx.BaseURL)
+		}
+		ctxBytes, _ := json.MarshalIndent(apiCtx, "", "  ")
+		systemPrompt += "\n\nUse ONLY the following API documentation to build the scenario steps. Do NOT invent endpoints, paths, methods, or body schemas:\n" + string(ctxBytes)
+	}
+
+	respText, err := s.llm.SendJSONPrompt(ctx, systemPrompt, prompt)
 	if err != nil {
 		return nil, err
 	}
-
-	// Clean up markdown block if any
-	respText = strings.TrimPrefix(respText, "```json\n")
-	respText = strings.TrimPrefix(respText, "```\n")
-	respText = strings.TrimSuffix(respText, "\n```")
 
 	var scenario domain.Scenario
 	if err := json.Unmarshal([]byte(respText), &scenario); err != nil {
@@ -57,37 +65,38 @@ Beklenen JSON yapısı:
 }
 
 func (s *AIService) AnalyzeMetrics(ctx context.Context, metrics []domain.AggregatedMetric) ([]domain.Anomaly, error) {
-	systemPrompt := `Sen bir performans analisti. Verilen metriklerde anomali, spike ve sorunları tespit et. SADECE JSON formatında Array döndür.
-Format:
-[
-  {
-    "type": "latency_spike",
-    "message": "P95 latency exceeded 500ms",
-    "severity": "high"
-  }
-]`
+	systemPrompt := `You are a performance analyst. Detect anomalies, spikes, and issues in the given load test metrics.
+You MUST respond with ONLY a valid JSON object — no prose, no markdown.
+Use this exact schema:
+{
+  "anomalies": [
+    {
+      "type": "latency_spike|error_surge|throughput_drop",
+      "message": "string",
+      "severity": "low|medium|high"
+    }
+  ]
+}
+If no anomalies are found, return: {"anomalies": []}`
 
 	metricsJSON, _ := json.Marshal(metrics)
-	userPrompt := string(metricsJSON)
 
-	respText, err := s.llm.SendPrompt(ctx, systemPrompt, userPrompt)
+	respText, err := s.llm.SendJSONPrompt(ctx, systemPrompt, string(metricsJSON))
 	if err != nil {
 		return nil, err
 	}
 
-	respText = strings.TrimPrefix(respText, "```json\n")
-	respText = strings.TrimPrefix(respText, "```\n")
-	respText = strings.TrimSuffix(respText, "\n```")
-
-	var anomalies []domain.Anomaly
-	if err := json.Unmarshal([]byte(respText), &anomalies); err != nil {
+	var result struct {
+		Anomalies []domain.Anomaly `json:"anomalies"`
+	}
+	if err := json.Unmarshal([]byte(respText), &result); err != nil {
 		return nil, err
 	}
-	return anomalies, nil
+	return result.Anomalies, nil
 }
 
 func (s *AIService) GenerateSummary(ctx context.Context, summary domain.Summary) (string, error) {
-	systemPrompt := `Sen bir teknik rapor yazarısın. Verilen test sonuçlarını Türkçe, yönetici seviyesinde, net ve profesyonel bir dille özetle. (1-2 paragraf)`
+	systemPrompt := `You are a technical report writer. Summarize the given test results in English, at an executive level, in a clear and professional language. (1-2 paragraphs)`
 
 	summaryJSON, _ := json.Marshal(summary)
 	userPrompt := string(summaryJSON)

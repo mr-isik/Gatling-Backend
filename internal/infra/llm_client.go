@@ -26,10 +26,15 @@ func NewLLMClient(apiKey string) *LLMClient {
 	}
 }
 
+type LLMResponseFormat struct {
+	Type string `json:"type"` // "text" or "json_object"
+}
+
 type LLMRequest struct {
-	Model     string       `json:"model"`
-	Messages  []LLMMessage `json:"messages"`
-	MaxTokens int          `json:"max_tokens,omitempty"`
+	Model          string            `json:"model"`
+	Messages       []LLMMessage      `json:"messages"`
+	MaxTokens      int               `json:"max_tokens,omitempty"`
+	ResponseFormat *LLMResponseFormat `json:"response_format,omitempty"`
 }
 
 type LLMMessage struct {
@@ -45,25 +50,8 @@ type LLMResponse struct {
 	} `json:"choices"`
 }
 
-func (c *LLMClient) SendPrompt(ctx context.Context, systemPrompt, userPrompt string) (string, error) {
-	messages := make([]LLMMessage, 0, 2)
-	if systemPrompt != "" {
-		messages = append(messages, LLMMessage{
-			Role:    "system",
-			Content: systemPrompt,
-		})
-	}
-	messages = append(messages, LLMMessage{
-		Role:    "user",
-		Content: userPrompt,
-	})
-
-	reqBody := LLMRequest{
-		Model:     "gpt-4o-mini", // "gpt-4o-mini" for speed/efficiency
-		Messages:  messages,
-		MaxTokens: 4096,
-	}
-
+// sendRequest is the internal helper that calls the OpenAI API.
+func (c *LLMClient) sendRequest(ctx context.Context, reqBody LLMRequest) (string, error) {
 	jsonData, err := json.Marshal(reqBody)
 	if err != nil {
 		return "", err
@@ -98,4 +86,37 @@ func (c *LLMClient) SendPrompt(ctx context.Context, systemPrompt, userPrompt str
 	}
 
 	return llmResp.Choices[0].Message.Content, nil
+}
+
+// SendPrompt sends a free-text prompt and returns the model's raw text response.
+func (c *LLMClient) SendPrompt(ctx context.Context, systemPrompt, userPrompt string) (string, error) {
+	messages := make([]LLMMessage, 0, 2)
+	if systemPrompt != "" {
+		messages = append(messages, LLMMessage{Role: "system", Content: systemPrompt})
+	}
+	messages = append(messages, LLMMessage{Role: "user", Content: userPrompt})
+
+	return c.sendRequest(ctx, LLMRequest{
+		Model:     "gpt-4o-mini",
+		Messages:  messages,
+		MaxTokens: 4096,
+	})
+}
+
+// SendJSONPrompt forces the model to return a valid JSON object (no prose, no markdown).
+// Uses the OpenAI `response_format: { type: "json_object" }` feature.
+// The system prompt MUST mention "JSON" or the API will return an error.
+func (c *LLMClient) SendJSONPrompt(ctx context.Context, systemPrompt, userPrompt string) (string, error) {
+	messages := make([]LLMMessage, 0, 2)
+	if systemPrompt != "" {
+		messages = append(messages, LLMMessage{Role: "system", Content: systemPrompt})
+	}
+	messages = append(messages, LLMMessage{Role: "user", Content: userPrompt})
+
+	return c.sendRequest(ctx, LLMRequest{
+		Model:     "gpt-4o-mini",
+		Messages:  messages,
+		MaxTokens: 4096,
+		ResponseFormat: &LLMResponseFormat{Type: "json_object"},
+	})
 }

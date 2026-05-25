@@ -29,7 +29,7 @@ func (r *testRunRepository) Create(ctx context.Context, tr *domain.TestRun) (*do
 }
 
 func (r *testRunRepository) GetByID(ctx context.Context, id string) (*domain.TestRun, error) {
-	query := `SELECT id, scenario_id, project_id, status, config, started_by, started_at, finished_at, error_msg, created_at 
+	query := `SELECT id, scenario_id, project_id, status, config, started_by, started_at, finished_at, COALESCE(error_msg, ''), created_at 
 	          FROM testruns WHERE id = $1`
 	var tr domain.TestRun
 	err := r.db.QueryRow(ctx, query, id).Scan(&tr.ID, &tr.ScenarioID, &tr.ProjectID, &tr.Status, &tr.Config, &tr.StartedBy, &tr.StartedAt, &tr.FinishedAt, &tr.ErrorMsg, &tr.CreatedAt)
@@ -40,7 +40,7 @@ func (r *testRunRepository) GetByID(ctx context.Context, id string) (*domain.Tes
 }
 
 func (r *testRunRepository) List(ctx context.Context, projectID string) ([]*domain.TestRun, error) {
-	query := `SELECT id, scenario_id, project_id, status, config, started_by, started_at, finished_at, error_msg, created_at 
+	query := `SELECT id, scenario_id, project_id, status, config, started_by, started_at, finished_at, COALESCE(error_msg, ''), created_at 
 	          FROM testruns WHERE project_id = $1 ORDER BY created_at DESC`
 	rows, err := r.db.Query(ctx, query, projectID)
 	if err != nil {

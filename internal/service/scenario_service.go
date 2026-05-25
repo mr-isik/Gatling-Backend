@@ -42,9 +42,9 @@ func (s *ScenarioService) List(ctx context.Context, projectID string) ([]*domain
 	return s.scenarioRepo.List(ctx, projectID)
 }
 
-func (s *ScenarioService) Generate(ctx context.Context, prompt string) (*domain.Scenario, error) {
+func (s *ScenarioService) Generate(ctx context.Context, prompt string, targetURL string, apiCtx *domain.ApiContext) (*domain.Scenario, error) {
 	// AI integration
-	scenario, err := s.aiService.GenerateScenario(ctx, prompt)
+	scenario, err := s.aiService.GenerateScenario(ctx, prompt, targetURL, apiCtx)
 	if err != nil {
 		return nil, err
 	}

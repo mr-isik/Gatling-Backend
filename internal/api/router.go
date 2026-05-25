@@ -56,6 +56,7 @@ func SetupRoutes(
 	scenarios.Get("/", scenarioHandler.List)
 	scenarios.Post("/", scenarioHandler.Create)
 	scenarios.Post("/generate", scenarioHandler.Generate)
+	scenarios.Post("/parse-api-doc", scenarioHandler.ParseApiDoc)
 	scenarios.Get("/:id", scenarioHandler.Get)
 	scenarios.Put("/:id", scenarioHandler.Update)
 	scenarios.Delete("/:id", scenarioHandler.Delete)

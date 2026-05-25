@@ -23,14 +23,19 @@ type HubIface interface {
 	Broadcast(runID, topic string, payload interface{})
 }
 
+type ReportServiceIface interface {
+	CreateFromRun(ctx context.Context, runID string) (*domain.Report, error)
+}
+
 type Orchestrator struct {
-	runService   TestRunServiceIface
-	metricRepo   repository.MetricRepository
-	scenarioRepo repository.ScenarioRepository
-	aiService    AIServiceIface
-	hub          HubIface
-	mu           sync.Mutex
-	cancels      map[string]context.CancelFunc
+	runService    TestRunServiceIface
+	metricRepo    repository.MetricRepository
+	scenarioRepo  repository.ScenarioRepository
+	aiService     AIServiceIface
+	hub           HubIface
+	reportService ReportServiceIface
+	mu            sync.Mutex
+	cancels       map[string]context.CancelFunc
 }
 
 func NewOrchestrator(
@@ -39,14 +44,16 @@ func NewOrchestrator(
 	scenarioRepo repository.ScenarioRepository,
 	aiService AIServiceIface,
 	hub HubIface,
+	reportService ReportServiceIface,
 ) *Orchestrator {
 	return &Orchestrator{
-		runService:   runService,
-		metricRepo:   metricRepo,
-		scenarioRepo: scenarioRepo,
-		aiService:    aiService,
-		hub:          hub,
-		cancels:      make(map[string]context.CancelFunc),
+		runService:    runService,
+		metricRepo:    metricRepo,
+		scenarioRepo:  scenarioRepo,
+		aiService:     aiService,
+		hub:           hub,
+		reportService: reportService,
+		cancels:       make(map[string]context.CancelFunc),
 	}
 }
 
@@ -94,6 +101,9 @@ func (o *Orchestrator) StartRun(ctx context.Context, runID string, config domain
 				aggCancel()
 				aggregator.Flush(context.Background())
 				o.runService.MarkFinished(context.Background(), runID, domain.StatusStopped, "")
+				if o.reportService != nil {
+					o.reportService.CreateFromRun(context.Background(), runID)
+				}
 				return
 			case <-ticker.C:
 				tickCount++
@@ -126,6 +136,9 @@ func (o *Orchestrator) StartRun(ctx context.Context, runID string, config domain
 					aggCancel()
 					aggregator.Flush(context.Background())
 					o.runService.MarkFinished(context.Background(), runID, domain.StatusFinished, "")
+					if o.reportService != nil {
+						o.reportService.CreateFromRun(context.Background(), runID)
+					}
 					return
 				}
 				target := scheduler.CalculateVUs(elapsed)

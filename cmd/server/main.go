@@ -88,7 +88,7 @@ func main() {
 	hub := ws.NewHub()
 	go hub.Run()
 
-	orchestrator := engine.NewOrchestrator(testRunService, metricRepo, scenarioRepo, aiService, hub)
+	orchestrator := engine.NewOrchestrator(testRunService, metricRepo, scenarioRepo, aiService, hub, reportService)
 	testRunService.SetOrchestrator(orchestrator)
 
 	// 5. Init Handlers (Phase 4)

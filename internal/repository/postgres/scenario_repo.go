@@ -69,6 +69,13 @@ func (r *scenarioRepository) Update(ctx context.Context, s *domain.Scenario) (*d
 }
 
 func (r *scenarioRepository) Delete(ctx context.Context, id string) error {
-	_, err := r.db.Exec(ctx, "DELETE FROM scenarios WHERE id = $1", id)
+	// First, delete any testruns associated with this scenario to prevent foreign key violations.
+	// Since testruns cascade to reports, this will safely clean up related data.
+	_, err := r.db.Exec(ctx, "DELETE FROM testruns WHERE scenario_id = $1", id)
+	if err != nil {
+		return err
+	}
+	
+	_, err = r.db.Exec(ctx, "DELETE FROM scenarios WHERE id = $1", id)
 	return err
 }
